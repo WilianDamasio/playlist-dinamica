@@ -1,6 +1,15 @@
 // data-structures/SingleLinkedList.js
 
+/**
+ * Classe Node: Representa um nó na lista ligada.
+ */
 class Node {
+
+    /**
+     * Construtor da classe Node.
+     * @param {*} data - O dado a ser armazenado no nó.
+     */
+    
     constructor(data) {
         this.data = data;
         this.proximo = null;

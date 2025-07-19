@@ -5,6 +5,8 @@ const express = require('express');
 const cors = require('cors');
 
 const playlistRouter = require('./rotas/playlist');
+const playlistDupla = require('./rotas/playlistDupla');
+
 
 const app = express();
 // Usaremos uma porta diferente para evitar conflito com o outro projeto
@@ -16,7 +18,9 @@ app.use(express.json()); // Para o backend entender corpos de requisição em JS
 
 // Montando as rotas da playlist sob o prefixo /api/playlist
 app.use('/api/playlist', playlistRouter);
+app.use('/api/playlistDupla', playlistDupla);
 
+// Iniciando o servidor
 app.listen(PORT, () => {
     console.log(`--- Servidor da Playlist Dinâmica rodando na porta ${PORT} ---`);
 });
