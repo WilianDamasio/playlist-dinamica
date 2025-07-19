@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
-const DoublyLinkedList = require('../data-strtuctures/DoublyLinkedList');
-
-const playlistDupla = new DoublyLinkedList();
-
+const playlistModel = require('../models/playlistModel');
 
 /**
  * @route   POST /api/playlistDupla
  * @desc    Adiciona uma nova música ao FINAL da playlist
  * @access  Public
  */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
 
     try {
 
@@ -26,12 +23,9 @@ router.post('/', (req, res) => {
             artista
         };
 
-        playlistDupla.append(novaMusica);
+        await playlistModel.append(novaMusica);
 
-        console.log('Música adicionada:', novaMusica);
-        console.log('Tamanho atual da playlist:', playlistDupla.tamanho);
-
-        res.status(201).json({ mensagem: 'Música adicionada com sucesso!', tamanhoAtual: playlistDupla.tamanho });
+        res.status(201).json({ mensagem: 'Música adicionada com sucesso!' });
 
     } catch (error) {
         console.error('Erro ao adicionar música:', error);
@@ -45,20 +39,17 @@ router.post('/', (req, res) => {
  * @desc    Retorna todas as músicas da playlist
  * @access  Public
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
 
     try {
 
-        const playlistComoArray = playlistDupla.toArray();
+        const playlistComoArray = await playlistModel.getAll();
 
         res.status(200).json({
             playlist: playlistComoArray,
-            total_de_musicas: playlistDupla.tamanho
+            total_de_musicas: playlistComoArray.length
         });
-
-        console.log('Playlist solicitada. Total de músicas:', playlistDupla.tamanho);
-
-
+        
     } catch (error) {
 
         res.status(500).json({ mensagem: 'Erro interno do servidor' });
@@ -74,27 +65,21 @@ router.get('/', (req, res) => {
  * @desc    Remove uma música de uma posição específica da playlist
  * @access  Public
  */ 
-router.delete('/:index', (req, res) => {
+router.delete('/:index', async (req, res) => {
 
     try {
 
         const index = parseInt(req.params.index);
-        const dadoRemovido = playlistDupla.removeAt(index);
+        const resultado = await playlistModel.removeAt(index);
         
-        if (dadoRemovido !== null) {
-
-            console.log(`Música "${dadoRemovido.nome}" removida da posição ${index}.`);
-
+        if (resultado && resultado.deletedCount > 0) {
             res.status(200).json({
-                message: `Música removida com sucesso da posição ${index}.`,
-                playlist: playlistDupla.toArray(),
-                musicaRemovida: dadoRemovido,
-                tamanhoAtual: playlistDupla.tamanho
+                mensagem: `Música na posição ${index} removida com sucesso.`
             });
             
         } else {
 
-            res.status(400).json({ message: 'Índice inválido. Nenhuma música foi removida.' });
+            res.status(404).json({ mensagem: 'Índice inválido ou música não encontrada. Nenhuma música foi removida.' });
         
         }
         
@@ -113,7 +98,7 @@ router.delete('/:index', (req, res) => {
  * @access  Public
  */ 
 
-router.post('/insert/:index', (req, res) => {
+router.post('/insert/:index', async (req, res) => {
 
     try {   
 
@@ -129,16 +114,12 @@ router.post('/insert/:index', (req, res) => {
             artista
         };
 
-        const inseridoComSucesso = playlistDupla.insertAt(index, novaMusica);
+        const resultado = await playlistModel.insertAt(index, novaMusica);
 
-        if (inseridoComSucesso) {
-
-            console.log(`Música "${nome}" inserida na posição ${index}.`);
+        if (resultado && resultado.insertedId) {
             res.status(200).json({
-                message: `Música inserida com sucesso na posição ${index}.`,
-                playlist: playlistDupla.toArray()
+                mensagem: `Música inserida com sucesso na posição ${index}.`
             });
-
         }
 
     }catch (error) {
@@ -148,6 +129,39 @@ router.post('/insert/:index', (req, res) => {
     
     }
 
+});
+
+/**
+ * @route   PATCH /api/playlistDupla/move
+ * @desc    Move uma música de uma posição para outra
+ * @access  Public
+ */
+router.patch('/move', async (req, res) => {
+    try {
+        const { from, to } = req.body;
+
+        // Validação de entrada
+        if (from === undefined || to === undefined || typeof from !== 'number' || typeof to !== 'number' || from < 0 || to < 0) {
+            return res.status(400).json({ mensagem: 'As propriedades "from" e "to" são obrigatórias e devem ser números não-negativos.' });
+        }
+
+        const resultado = await playlistModel.move(from, to);
+
+        if (resultado === null) {
+             return res.status(404).json({ mensagem: `Música não encontrada na posição de origem ${from}.` });
+        }
+
+        if (resultado.modifiedCount > 0) {
+            res.status(200).json({ mensagem: `Música movida da posição ${from} para ${to} com sucesso.` });
+        } else {
+            // Este caso acontece se from === to. O modelo lida com isso.
+            res.status(200).json({ mensagem: 'As posições de origem e destino são as mesmas. Nenhuma alteração foi feita.' });
+        }
+
+    } catch (error) {
+        console.error('Erro ao mover música na playlist:', error);
+        res.status(500).json({ mensagem: 'Erro interno do servidor' });
+    }
 });
 
 module.exports = router;

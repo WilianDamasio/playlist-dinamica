@@ -1,12 +1,13 @@
 // backend-playlist/server.js
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
 const playlistRouter = require('./rotas/playlist');
 const playlistDupla = require('./rotas/playlistDupla');
+const { connectToDatabase } = require('./config/database');
 
+connectToDatabase();
 
 const app = express();
 // Usaremos uma porta diferente para evitar conflito com o outro projeto

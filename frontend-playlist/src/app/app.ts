@@ -3,11 +3,12 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DragDropModule],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
@@ -30,6 +31,7 @@ export class AppComponent {
   carregarPlaylist() {
     this.http.get<{ playlist: any[] }>(this.apiUrl).subscribe({
       next: (response) => {
+        console.log("Playlist carregada com sucesso", response)
         this.playlist = response.playlist;
         this.cdr.detectChanges();
       },
@@ -68,6 +70,33 @@ export class AppComponent {
         this.indiceParaInserir = 0;
       },
       error: (err) => console.error('Erro ao inserir música', err)
+    });
+  }
+
+  // Método para mover uma música na playlist (arrastar e soltar)
+  moverMusica(event: CdkDragDrop<any[]>) {
+    const fromIndex = event.previousIndex;
+    const toIndex = event.currentIndex;
+
+    // Não faz nada se o item for solto no mesmo lugar
+    if (fromIndex === toIndex) {
+      return;
+    }
+
+    // Atualiza a ordem da lista na interface para uma resposta visual imediata (UI Otimista)
+    moveItemInArray(this.playlist, fromIndex, toIndex);
+    this.cdr.detectChanges();
+
+    const url = `${this.apiUrl}/move`;
+    const body = { from: fromIndex, to: toIndex };
+
+    this.http.patch(url, body).subscribe({
+      next: () => console.log(`Música movida de ${fromIndex} para ${toIndex}`),
+      error: (err) => {
+        console.error('Erro ao mover música', err);
+        // Em caso de erro, recarrega a playlist do servidor para reverter a mudança visual.
+        this.carregarPlaylist();
+      }
     });
   }
 }

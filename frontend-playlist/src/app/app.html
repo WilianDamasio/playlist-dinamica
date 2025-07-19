@@ -14,8 +14,8 @@
 
   <div class="playlist-card">
     <h2>Sua Playlist ({{ playlist.length }} músicas)</h2>
-    <ol>
-      <li *ngFor="let musica of playlist; let i = index">
+    <ol cdkDropList (cdkDropListDropped)="moverMusica($event)">
+      <li *ngFor="let musica of playlist; let i = index" cdkDrag>
         <span><strong>{{ musica.nome }}</strong> - {{ musica.artista }}</span>
         <button class="delete-btn" (click)="removerMusica(i)">Remover</button>
       </li>
